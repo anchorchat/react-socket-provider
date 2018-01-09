@@ -1,0 +1,35 @@
+{
+  "presets": [
+    "env",
+    "react",
+    "stage-0"
+  ],
+  "plugins": [
+    "add-module-exports"
+  ],
+  "env": {
+    "test": {
+      "plugins": ["istanbul"]
+    },
+    "commonjs": {
+      "presets": [
+        ["env", {
+          "useBuiltIns": false
+        }]
+      ]
+    },
+    "es": {
+      "presets": [
+        ["env", {
+          "useBuiltIns": false,
+          "modules": false
+        }]
+      ]
+    },
+    "rollup": {
+      "plugins": [
+        "external-helpers"
+      ]
+    }
+  }
+}

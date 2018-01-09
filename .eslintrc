@@ -1,0 +1,17 @@
+{
+  "extends": ["airbnb"],
+  "parser": "babel-eslint",
+  "rules": {
+    "comma-dangle": 0
+  },
+  "globals": {
+    "Image": true,
+    "window": true,
+    "document": true
+  },
+  "env": {
+    "browser": true,
+    "mocha": true,
+    "node": true
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "name": "react-socket-provider",
+  "version": "1.0.0",
+  "description": "React Socket Provider with HOC",
+  "main": "./lib/index.js",
+  "module": "./es/index.js",
+  "jsnext:main": "./es/index.js",
+  "scripts": {
+    "build:commonjs": "cross-env BABEL_ENV=commonjs babel src --out-dir lib",
+    "build:es": "cross-env BABEL_ENV=es babel src --out-dir es",
+    "build:umd": "cross-env BABEL_ENV=rollup NODE_ENV=development rollup -c -o dist/react-socket-provider.js",
+    "build:umd:min": "cross-env BABEL_ENV=rollup NODE_ENV=production rollup -c -o dist/react-socket-provider.min.js",
+    "build": "npm run build:commonjs && npm run build:es && npm run build:umd && npm run build:umd:min",
+    "clean": "rimraf dist es lib coverage",
+    "lint": "./node_modules/.bin/eslint src test",
+    "prepare": "npm run clean && npm run build",
+    "test": "cross-env BABEL_ENV=commonjs NODE_ENV=test mocha --opts ./mocha.opts",
+    "test:watch": "npm test -- --watch",
+    "test:cov": "cross-env NODE_ENV=test nyc npm test",
+    "coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anchorchat/react-socket-provider.git"
+  },
+  "files": [
+    "dist",
+    "es",
+    "lib",
+    "src"
+  ],
+  "keywords": [
+    "es6",
+    "hoc",
+    "provider",
+    "react",
+    "reactjs",
+    "socket",
+    "socket.io"
+  ],
+  "author": "Lars Tadema <lars.tadema@anchor.chat>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/anchorchat/react-socket-provider/issues"
+  },
+  "homepage": "https://github.com/anchorchat/react-socket-provider#readme",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-eslint": "^8.2.1",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-istanbul": "^4.1.5",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-react": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1",
+    "babel-register": "^6.26.0",
+    "codecov": "^3.0.0",
+    "cross-env": "^5.1.3",
+    "eslint": "^4.15.0",
+    "eslint-config-airbnb": "^16.1.0",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jsx-a11y": "^6.0.3",
+    "eslint-plugin-react": "^7.5.1",
+    "expect": "^22.0.3",
+    "istanbul": "^0.4.5",
+    "jsdom": "^11.5.1",
+    "nyc": "^11.4.1",
+    "react-dom": "^16.2.0",
+    "rimraf": "^2.6.2",
+    "rollup": "^0.53.3",
+    "rollup-plugin-babel": "^3.0.3",
+    "rollup-plugin-commonjs": "^8.2.6",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-replace": "^2.0.0",
+    "rollup-plugin-uglify": "^2.0.1"
+  },
+  "dependencies": {
+    "hoist-non-react-statics": "^2.3.1",
+    "prop-types": "^15.6.0",
+    "react": "^16.2.0"
+  },
+  "peerDependencies": {
+    "react": "^15.0.0-0 || ^16.0.0-0"
+  }
+}
