@@ -1,4 +1,3 @@
-import io from 'socket.io-client';
 import { Component, Children } from 'react';
 import PropTypes from 'prop-types';
 import Subscription from '../utils/subscription';

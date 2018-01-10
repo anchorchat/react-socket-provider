@@ -1,25 +1,48 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-// import hoistStatics from 'hoist-non-react-statics';
 import invariant from 'invariant';
+import isEqual from 'lodash.isequal';
+
+const noop = () => {};
 
 const defaultMapSocketToProps = (socket, events) => ({
   socket,
   events
 });
 
-const getDisplayName = Component => (
-  Component.displayName || Component.name || 'Component'
-);
+const defaultGetDisplayName = name => `withSocket(${name})`;
+
+const calculateChanges = (mapSocketToProps, events) => {
+  const changes = {
+    run: (socket, props) => {
+      try {
+        const nextProps = mapSocketToProps(socket, events, props);
+
+        if (!isEqual(nextProps, changes.props) || changes.error) {
+          changes.shouldComponentUpdate = true;
+          changes.props = nextProps;
+          changes.error = null;
+        }
+      } catch (error) {
+        changes.shouldComponentUpdate = true;
+        changes.error = error;
+      }
+    }
+  };
+
+  return changes;
+};
 
 const withSocket = (
   mapSocketToProps = defaultMapSocketToProps,
   {
     socketKey = 'socket',
-    subKey
+    subKey,
+    getDisplayName = defaultGetDisplayName
   } = {}
 ) => (Component) => {
-  const displayName = `withSocket(${getDisplayName(Component)})`;
+  const componentName = Component.displayName || Component.name || 'Component';
+  const displayName = getDisplayName(componentName);
   const subscriptionKey = subKey || `${socketKey}Subscription`;
 
   const contextTypes = {
@@ -47,29 +70,63 @@ const withSocket = (
          Make sure to wrap the root component in a <SocketProvider>.`
       );
 
-      this.state = {
-        socket: context[socketKey]
-      };
+      this.socket = context[socketKey];
+      this.events = context.events;
 
       this.unsubscribe = context[subscriptionKey].subscribe(this.onChange);
+      this.initChanges();
+    }
+
+    componentDidMount() {
+      this.changes.run(this.socket, this.props);
+
+      if (this.changes.shouldComponentUpdate) {
+        this.forceUpdate();
+      }
+    }
+
+    componentWillReceiveProps(nextProps) {
+      this.changes.run(this.socket, nextProps);
+    }
+
+    shouldComponentUpdate() {
+      return this.changes.shouldComponentUpdate;
     }
 
     componentWillUnmount() {
       if (this.unsubscribe) {
         this.unsubscribe();
-        this.unsubscribe = null;
+      }
+      this.unsubscribe = null;
+      this.changes.run = noop;
+      this.changes.shouldComponentUpdate = false;
+    }
+
+
+    onChange = (socket) => {
+      this.socket = socket;
+      this.changes.run(this.socket, this.props);
+
+      if (this.changes.shouldComponentUpdate) {
+        this.forceUpdate();
       }
     }
 
-    onChange = socket => this.setState({ socket })
+    initChanges = () => {
+      this.changes = calculateChanges(mapSocketToProps, this.events);
+      this.changes.run(this.socket, this.props);
+    }
 
     render() {
-      const { socket } = this.state;
-      const { events } = this.context;
+      this.changes.shouldComponentUpdate = false;
+
+      if (this.changes.error) {
+        throw this.changes.error;
+      }
 
       const newProps = {
         ...this.props,
-        ...mapSocketToProps(socket, events, this.props)
+        ...this.changes.props
       };
 
       return <Component {...newProps} />;
