@@ -1,8 +1,9 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import hoistStatics from 'hoist-non-react-statics';
+// import hoistStatics from 'hoist-non-react-statics';
+import invariant from 'invariant';
 
-const defaultFactory = (socket, events) => ({
+const defaultMapSocketToProps = (socket, events) => ({
   socket,
   events
 });
@@ -11,14 +12,24 @@ const getDisplayName = Component => (
   Component.displayName || Component.name || 'Component'
 );
 
-/**
- * A public higher-order component to access the imperative API
- */
-const withSocket = (socketFactory = defaultFactory) => (Component) => {
+const withSocket = (
+  mapSocketToProps = defaultMapSocketToProps,
+  {
+    socketKey = 'socket',
+    subKey
+  } = {}
+) => (Component) => {
   const displayName = `withSocket(${getDisplayName(Component)})`;
+  const subscriptionKey = subKey || `${socketKey}Subscription`;
 
   const contextTypes = {
-    socket: PropTypes.object,
+    [socketKey]: PropTypes.instanceOf(Object),
+    [subscriptionKey]: PropTypes.shape({
+      clear: PropTypes.func,
+      get: PropTypes.func,
+      notify: PropTypes.func,
+      subscribe: PropTypes.func,
+    }),
     events: PropTypes.shape({
       add: PropTypes.func,
       destroy: PropTypes.func,
@@ -26,20 +37,50 @@ const withSocket = (socketFactory = defaultFactory) => (Component) => {
     })
   };
 
-  const C = (props, { socket, events }) => {
-    const newProps = {
-      ...props,
-      ...socketFactory(socket, events)
-    };
+  class Socket extends Component {
+    constructor(props, context) {
+      super(props, context);
 
-    return <Component {...newProps} />;
-  };
+      invariant(
+        context[socketKey],
+        `Could not find "${socketKey}" in context "${displayName}".
+         Make sure to wrap the root component in a <SocketProvider>.`
+      );
 
-  C.WrappedComponent = Component;
-  C.displayName = displayName;
-  C.contextTypes = contextTypes;
+      this.state = {
+        socket: context[socketKey]
+      };
 
-  return hoistStatics(C, Component);
+      this.unsubscribe = context[subscriptionKey].subscribe(this.onChange);
+    }
+
+    componentWillUnmount() {
+      if (this.unsubscribe) {
+        this.unsubscribe();
+        this.unsubscribe = null;
+      }
+    }
+
+    onChange = socket => this.setState({ socket })
+
+    render() {
+      const { socket } = this.state;
+      const { events } = this.context;
+
+      const newProps = {
+        ...this.props,
+        ...mapSocketToProps(socket, events, this.props)
+      };
+
+      return <Component {...newProps} />;
+    }
+  }
+
+  Socket.WrappedComponent = Component;
+  Socket.displayName = displayName;
+  Socket.contextTypes = contextTypes;
+
+  return Socket;
 };
 
 export default withSocket;

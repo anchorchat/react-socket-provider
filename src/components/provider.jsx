@@ -1,3 +1,4 @@
+import io from 'socket.io-client';
 import { Component, Children } from 'react';
 import PropTypes from 'prop-types';
 import Subscription from '../utils/subscription';
@@ -26,6 +27,7 @@ export const createProvider = (socketKey = 'socket', subKey) => {
   };
 
   const childContextTypes = {
+    [socketKey]: PropTypes.instanceOf(Object),
     [subscriptionKey]: PropTypes.shape({
       clear: PropTypes.func,
       get: PropTypes.func,
@@ -50,18 +52,22 @@ export const createProvider = (socketKey = 'socket', subKey) => {
       this.initSocketEvents();
     }
 
-    getChildContext = () => ({
-      [subscriptionKey]: this.subscription,
-      events: {
-        add: this.addEvent,
-        delete: this.deleteEvent,
-        clear: this.clearEvents
-      }
-    });
+    getChildContext() {
+      return {
+        [socketKey]: this.socket,
+        [subscriptionKey]: this.subscription,
+        events: {
+          add: this.addEvent,
+          delete: this.deleteEvent,
+          clear: this.clearEvents
+        }
+      };
+    }
 
     componentWillReceiveProps(nextProps) {
       if (nextProps.socket !== this.props.socket) {
         this.subscription.notify(nextProps.socket);
+        this.socket = nextProps.socket;
       }
     }
 
@@ -81,23 +87,35 @@ export const createProvider = (socketKey = 'socket', subKey) => {
       this.socket.on('ping', onPing);
 
       // Connect captures the initial connection and all reconnections
-      this.socket.on('connect', onConnect);
+      this.socket.on('connect', () => {
+        this.subscription.notify(this.socket);
+        return onConnect;
+      });
 
       // Reconnect only tells the socket the reconnection was succesfull,
       // this doesn't update the socket
       // onReconnect = (attemptNumber) => {}
-      this.socket.on('reconnect', onReconnect);
+      this.socket.on('reconnect', (attemptNumber) => {
+        this.subscription.notify(this.socket);
+        return onReconnect(attemptNumber);
+      });
 
       // Fired upon an attempt to reconnect.
       // onReconnecting = (attemptNumber) => {}
-      this.socket.on('reconnecting', onReconnecting);
+      this.socket.on('reconnecting', (attemptNumber) => {
+        this.subscription.notify(this.socket);
+        return onReconnecting(attemptNumber);
+      });
 
       // Disconnect is fired when the socket receives a disconnect event from the server,
       // onDisconnect = (reason) => {}
       // - io client disconnect
       // - transport close (force quit the socket server)
       // - io server disconnect (server disconnect event like a authorization timeout)
-      this.socket.on('disconnect', onDisconnect);
+      this.socket.on('disconnect', (reason) => {
+        this.subscription.notify(this.socket);
+        return onDisconnect(reason);
+      });
     }
 
     addEvent = (event, callback) => {
