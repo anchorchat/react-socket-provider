@@ -1,34 +1,31 @@
 {
-  "presets": [
-    "env",
-    "react",
-    "stage-0"
-  ],
-  "plugins": [
-    "add-module-exports"
-  ],
   "env": {
     "test": {
       "plugins": ["istanbul"]
     },
     "commonjs": {
       "presets": [
+        "react",
+        "stage-0",
         ["env", {
           "useBuiltIns": false
         }]
+      ],
+      "plugins": [
+        "transform-class-properties"
       ]
     },
     "es": {
       "presets": [
+        "react",
+        "stage-0",
         ["env", {
           "useBuiltIns": false,
           "modules": false
         }]
-      ]
-    },
-    "rollup": {
+      ],
       "plugins": [
-        "external-helpers"
+        "transform-class-properties"
       ]
     }
   }
