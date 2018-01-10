@@ -16,7 +16,7 @@ const calculateChanges = (mapSocketToProps, events) => {
   const changes = {
     run: (socket, props) => {
       try {
-        const nextProps = mapSocketToProps(socket, events, props);
+        const nextProps = { ...props, ...mapSocketToProps(socket, events, props) };
 
         if (!isEqual(nextProps, changes.props) || changes.error) {
           changes.shouldComponentUpdate = true;
@@ -124,12 +124,7 @@ const withSocket = (
         throw this.changes.error;
       }
 
-      const newProps = {
-        ...this.props,
-        ...this.changes.props
-      };
-
-      return <Component {...newProps} />;
+      return <Component {...this.changes.props} />;
     }
   }
 
